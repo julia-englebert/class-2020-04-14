@@ -36,6 +36,19 @@ The data has been taken from the National Election Survey. Note that both ideolo
 **Prompt:**
 
 Explore the data and see the variables for yourself. See if anything looks strange in the summary.
+```{r}
+# glimpse
+glimpse(nes)
+
+# sample
+nes %>% 
+  sample_n(size = 5)
+
+# skim
+nes %>% 
+  select(dvote, ideology, party, income) %>% 
+  skim()
+```
 
 Create a scatterplot of our outcome variable `dvote` and a continuous predictor `income`. 
 
@@ -45,6 +58,11 @@ Draw a regression line through this jittered data using `geom_smooth()`.
 
 Discuss whether a linear regression is appropriate for this. Is there a possibility of model predicting greater than 1 or less than 0 probability for `dvote`?
 
+```{r scene_1}
+ggplot(nes, aes(income, dvote)) + 
+  geom_jitter(height = 0.1, alpha = 0.2) +
+  geom_smooth(method = "lm", se = FALSE)
+```
 
 # Scene 2
 
@@ -63,6 +81,30 @@ Explain to your non-mathematical boss the relationship between income and prefer
 Optional (very hard!): Interpret the `estimate` for (Intercept). What does it mean? Think back to how we interpreted regression intercepts in the last two weeks. You *might* need to use the `qlogis()` function.
 
 
+```{r scene_2}
+model_1 <- glm(dvote ~ gender + income, family = binomial, data = nes)
+model_1 %>%
+  tidy(conf.int = TRUE) %>%
+  select(term, estimate, conf.low, conf.high)
+
+# hypothetical person with 0 income
+
+# divide by 4 rule
+-0.1597/4
+# 0.039925
+# this means that being male reults in a -0.03992 decrease in probability of voting for a democrat
+
+# predicted prob for female
+plogis(-0.1597261 + 0.7471462)
+# 0.642773
+
+# predicted prob for male
+plogis(0.7471462)
+# 0.6785566
+
+# freq: if we did this repeatedly, the true value would lie between these two numbers
+# baye: we're 95% certain the true value is in this range
+```
 
 
 # Scene 3
@@ -133,6 +175,25 @@ Interpret the plot.
 # Challenge Problem 1
 
 **Prompt:** Replicate this graph: https://rpubs.com/Seeam2590/594856 
+```{r}
+
+labels <- c(female = "Female", male = "Male")
+nes %>%
+  group_by(year, gender) %>%
+  summarize(perc_dvote = mean(dvote),
+            emplogit = qlogis(perc_dvote)) %>%
+  ggplot(aes(year, emplogit)) +
+  facet_wrap(~gender, labeller = labeller(gender = labels)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Year",
+       y = "Empirical Logits",
+       title = "Trends Favoring Democrats by Gender",
+       caption = "Source: National Election Survey") +
+  theme_classic()
+  
+  
+```
 
 
 
